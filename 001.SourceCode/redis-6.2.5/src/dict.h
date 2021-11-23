@@ -47,14 +47,23 @@
 /* Unused arguments generate annoying warnings... */
 #define DICT_NOTUSED(V) ((void) V)
 
+/**
+ * 哈希表节点 数据结构
+ * 示意图: 001.SourceCode/000.Remark/dictht-structure-002.png
+ */ 
 typedef struct dictEntry {
+    // 键值对中的键
     void *key;
+
+    // 键值对中的值，如联合体，值可以是一个指针，一个uint64_t整数或一个int64_t整数
     union {
         void *val;
         uint64_t u64;
         int64_t s64;
         double d;
     } v;
+
+    // 指向下一个哈希表节点的指针
     struct dictEntry *next;
 } dictEntry;
 
@@ -69,19 +78,45 @@ typedef struct dictType {
 } dictType;
 
 /* This is our hash table structure. Every dictionary has two of this as we
- * implement incremental rehashing, for the old to the new table. */
+ * implement incremental rehashing, for the old to the new table.
+ * 这是我们的哈希表结构。当我们实现渐进式rehash时，每个字典都有两个这样的表，从旧表到新表。
+ * 哈希表
+ * 
+ * 示意图: 001.SourceCode/000.Remark/dictht-structure-001.png
+ */
 typedef struct dictht {
-    dictEntry **table;
-    unsigned long size;
-    unsigned long sizemask;
-    unsigned long used;
+  // 哈希表数组  
+  dictEntry **table;
+
+  // 哈希表大小，即table数组大小(数组元素: dictEntry*)
+  unsigned long size;
+
+  // 哈希表大小掩码，用于计算索引值。总是等于size-1
+  unsigned long sizemask;
+
+  // 该hash表已有节点数量,即键值对的数量
+  unsigned long used;
 } dictht;
 
+
+/**
+ * Redis 字典
+ * 
+ */ 
 typedef struct dict {
+
+    // 类型特定函数，Redis会为用途不同的字典设置不同类型的特定函数。
     dictType *type;
+
+    // 私有数据
     void *privdata;
+
+    // 哈希表，.即使用哈希表来实现字典。这里是两个哈希表，主要是用于rehash
     dictht ht[2];
+    
+    // rehash索引，当rehashindx不在进行时，值为-1. 也表示着rehash的进度，如，rehashidx=1，表示正在对ht[0]中索引为1的dictEntry列表元素进行rehash
     long rehashidx; /* rehashing not in progress if rehashidx == -1 */
+
     int16_t pauserehash; /* If >0 rehashing is paused (<0 indicates coding error) */
 } dict;
 

@@ -376,6 +376,7 @@ typedef enum {
 /* Anti-warning macro... */
 #define UNUSED(V) ((void) V)
 
+// 跳表level最大值
 #define ZSKIPLIST_MAXLEVEL 32 /* Should be enough for 2^64 elements */
 #define ZSKIPLIST_P 0.25      /* Skiplist P = 1/4 */
 
@@ -994,6 +995,9 @@ struct sharedObjectsStruct {
 };
 
 /* ZSETs use a specialized version of Skiplists */
+/**
+ * 跳表节点
+ */ 
 typedef struct zskiplistNode {
     sds ele;
     double score;
@@ -1004,14 +1008,32 @@ typedef struct zskiplistNode {
     } level[];
 } zskiplistNode;
 
+/**
+ * 跳表
+ */ 
 typedef struct zskiplist {
+    // header为一个虚拟的头节点
     struct zskiplistNode *header, *tail;
+
+     //跳跃表的长度，即跳跃表目前包含的节点的数量
     unsigned long length;
+    
+    // 记录目前跳跃表内，层数最大的那个节点的层数
     int level;
 } zskiplist;
 
+/**
+ * 哈哈，Zset
+ * 可以看出，zset由哈希表dict和跳表zskiplist实现
+ * 这两种数据结构是如何使用的呢?
+ * >> 解密: dict zsl均会保存一份该集合中的数据，dict的功能是为了快速检索，如获取元素分数指令:zscore
+ */
 typedef struct zset {
+    
+    // 哈希表，为了快速检索(已经明确元素的检索,如zscore)
     dict *dict;
+
+    // skiplist
     zskiplist *zsl;
 } zset;
 

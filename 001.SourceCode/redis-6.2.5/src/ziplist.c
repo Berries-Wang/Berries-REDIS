@@ -5,6 +5,11 @@
  * in O(1) time. However, because every operation requires a reallocation of
  * the memory used by the ziplist, the actual complexity is related to the
  * amount of memory used by the ziplist.
+ * 
+ * ziplist是一种特别编码的双链表，它的设计是为了非常节省内存。它同时存储字符串和整数值，其中整数被编码为实际的整数，
+ * 而不是一系列字符。它允许在O(1)时间内对列表的任意一侧进行push和pop操作。但是，因为每个操作都需要重新分配ziplist使用的内存
+ * ，所以实际的复杂性与ziplist使用的内存数量有关。
+ * >> 存储字符串和整数
  *
  * ----------------------------------------------------------------------------
  *
@@ -15,40 +20,47 @@
  *
  * <zlbytes> <zltail> <zllen> <entry> <entry> ... <entry> <zlend>
  *
- * NOTE: all fields are stored in little endian, if not specified otherwise.
+ * NOTE: all fields are stored in little endian, if not specified otherwise. 如果没有另外指定，所有字段都以小尾数存储。
  *
  * <uint32_t zlbytes> is an unsigned integer to hold the number of bytes that
- * the ziplist occupies, including the four bytes of the zlbytes field itself.
+ * the ziplist occupies(占据了), including the four bytes of the zlbytes field itself.
  * This value needs to be stored to be able to resize the entire structure
- * without the need to traverse it first.
+ * without the need to traverse(遍历) it first.
  *
  * <uint32_t zltail> is the offset to the last entry in the list. This allows
  * a pop operation on the far side of the list without the need for full
- * traversal.
+ * traversal(遍历).
+ * 最后一个entry的偏移量，这允许在列表的远端进行弹出操作，而不需要进行全遍历
  *
  * <uint16_t zllen> is the number of entries. When there are more than
  * 2^16-2 entries, this value is set to 2^16-1 and we need to traverse the
  * entire list to know how many items it holds.
+ * entry的数量，当数量超过2^16-2，那个这个值被设置为2^16-1并且需要遍历这个列表去获取entry的数量
  *
- * <uint8_t zlend> is a special entry representing the end of the ziplist.
+ * <uint8_t zlend> is a special(特殊的) entry representing(代表) the end of the ziplist.
  * Is encoded as a single byte equal to 255. No other normal entry starts
- * with a byte set to the value of 255.
+ * with a byte set to the value of 255. 
+ * 这是一个特殊的entry，他代表着这个ziplist的结尾。他被编码在一个等于255的单独的字节中。没有其他entry可以以等于255的字节开始.
  *
  * ZIPLIST ENTRIES
  * ===============
  *
- * Every entry in the ziplist is prefixed by metadata that contains two pieces
+ * Every entry in the ziplist is prefixed by metadata that contains two pieces(块，片)
  * of information. First, the length of the previous entry is stored to be
  * able to traverse the list from back to front. Second, the entry encoding is
- * provided. It represents the entry type, integer or string, and in the case
+ * provided. It represents(代表) the entry type, integer or string, and in the case
  * of strings it also represents the length of the string payload.
  * So a complete entry is stored like this:
+ * ziplist中的每个条目都以包含两条信息的元数据作为前缀，首先，前一个entry的长度被存储以便从后往前遍历，
+ * 其次，提供了这个entry的编码，他代表了这个entry的类型：integer 或 string，以及存储的字符串的长度。
+ * 所以，一个完整的entry的存储格式如下: 
  *
  * <prevlen> <encoding> <entry-data>
  *
  * Sometimes the encoding represents the entry itself, like for small integers
  * as we'll see later. In such a case the <entry-data> part is missing, and we
  * could have just:
+ * 有时候encoding也代表entry本身，例如之后讨论的小整型。在这种情况下，<entry-data>就丢失了,存储格式如下: 
  *
  * <prevlen> <encoding>
  *
@@ -58,24 +70,34 @@
  * is greater than or equal to 254, it will consume 5 bytes. The first byte is
  * set to 254 (FE) to indicate a larger value is following. The remaining 4
  * bytes take the length of the previous entry as value.
+ * 前一个entry的长度 <prevlen>,按照如下的方式编码:
+ * > 当长度小于254个字节，他会消耗1个字节将长度作为8位的无符号整数来存储
+ * > 当长度大于等于254个字节，他将消耗5个字节，第一个字节被设置为254(FE,为什么不能是FF,即255，见zlend)表明后面存储一个大的值。余下的四个字节用来存储前一个entry的长度
  *
- * So practically an entry is encoded in the following way:
+ * So practically(adv. 实际地；几乎；事实上) an entry is encoded in the following way:
+ * 所以，几乎所有的entry都是按照如下的方式编码的: 
  *
  * <prevlen from 0 to 253> <encoding> <entry>
  *
- * Or alternatively if the previous entry length is greater than 253 bytes
+ * Or alternatively(adv. 要不，或者；非此即彼；二者择一地；作为一种选择) if the previous entry length is greater than 253 bytes
  * the following encoding is used:
+ * 或者前一个entry的长度超过253，那么就按照如下的方式存储
  *
  * 0xFE <4 bytes unsigned little endian prevlen> <encoding> <entry>
- *
+ * >>>>>> little endian 即小端存储
+ * 
  * The encoding field of the entry depends on the content of the
  * entry. When the entry is a string, the first 2 bits of the encoding first
  * byte will hold the type of encoding used to store the length of the string,
  * followed by the actual length of the string. When the entry is an integer
  * the first 2 bits are both set to 1. The following 2 bits are used to specify
- * what kind of integer will be stored after this header. An overview of the
+ * what kind of integer will be stored after this header. An overview(概述) of the
  * different types and encodings is as follows. The first byte is always enough
- * to determine the kind of entry.
+ * to determine(确定) the kind of entry.
+ * 
+ * entry的编码字段取决于entry的内容，当entry是一个string，编码字节的前两位被用来保存string长度的编码类型，后面跟的是string实际的长度
+ * 当entry是一个Integer，最开始的两个bit为均被设置为1，紧接着的两个bit位被用于指定存储在这个header后面的integer的类型。
+ * 以下是不同类型和编码的概述，第一个字节足以确定entry的类型
  *
  * |00pppppp| - 1 byte
  *      String value with length less than or equal to 63 bytes (6 bits).
@@ -105,8 +127,11 @@
  *      subtracted from the encoded 4 bit value to obtain the right value.
  * |11111111| - End of ziplist special entry.
  *
- * Like for the ziplist header, all the integers are represented in little
+ * // ##### 通过上述可以看出，前两位为11的才是Integer，有一位为0则代表string
+ * 
+ * Like for the ziplist header, all the integers are represented(代表；表现；描写) in little
  * endian byte order, even when this code is compiled in big endian systems.
+ * 例如 ziplist的header，所有的整数都以小尾数字节顺序表示，尽管这些代码在大端存储的系统中编译
  *
  * EXAMPLES OF ACTUAL ZIPLISTS
  * ===========================
@@ -178,6 +203,8 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
+ * 
+ * ziplist采取的是小端字节序。
  */
 
 #include <stdio.h>

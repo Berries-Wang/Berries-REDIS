@@ -121,10 +121,11 @@
  *      Integer encoded as 24 bit signed (3 bytes).
  * |11111110| - 2 bytes
  *      Integer encoded as 8 bit signed (1 byte).
- * |1111xxxx| - (with xxxx between 0001 and 1101) immediate 4 bit integer.
+ * |1111xxxx| - (with xxxx between 0001 and 1101) immediate(立即) 4 bit integer.
  *      Unsigned integer from 0 to 12. The encoded value is actually from
  *      1 to 13 because 0000 and 1111 can not be used, so 1 should be
  *      subtracted from the encoded 4 bit value to obtain the right value.
+ *      >>>> 0000、1111 不能使用，所以要从编码的4bit位中减一来获取正确的值
  * |11111111| - End of ziplist special entry.
  *
  * // ##### 通过上述可以看出，前两位为11的才是Integer，有一位为0则代表string
@@ -137,33 +138,49 @@
  * ===========================
  *
  * The following is a ziplist containing the two elements representing
- * the strings "2" and "5". It is composed of 15 bytes, that we visually
+ * the strings "2" and "5". It is composed of 15 bytes, that we visually(形象化地；外表上；看得见地)
  * split into sections:
+ * 以下是一个包"2" 和 "5"这两个string的ziplist，他由15个字节组成，我们形象的分成几部分
  *
  *  [0f 00 00 00] [0c 00 00 00] [02 00] [00 f3] [02 f6] [ff]
  *        |             |          |       |       |     |
  *     zlbytes        zltail    entries   "2"     "5"   end
  *
+ * // 小端存储
+ * 
  * The first 4 bytes represent the number 15, that is the number of bytes
- * the whole ziplist is composed of. The second 4 bytes are the offset
+ * the whole ziplist is composed(组成) of. The second 4 bytes are the offset
  * at which the last ziplist entry is found, that is 12, in fact the
  * last entry, that is "5", is at offset 12 inside the ziplist.
  * The next 16 bit integer represents the number of elements inside the
- * ziplist, its value is 2 since there are just two elements inside.
+ * ziplist, its value is 2 since(在……以后，自……以来；因为，由于，既然) there are just two elements inside.
  * Finally "00 f3" is the first entry representing the number 2. It is
- * composed of the previous entry length, which is zero because this is
- * our first entry, and the byte F3 which corresponds to the encoding
+ * composed(组成；沉着的) of the previous entry length, which is zero because this is
+ * our first entry, and the byte F3 which corresponds(类似于，相当于；通信；相一致，符合) to the encoding
  * |1111xxxx| with xxxx between 0001 and 1101. We need to remove the "F"
  * higher order bits 1111, and subtract 1 from the "3", so the entry value
  * is "2". The next entry has a prevlen of 02, since the first entry is
  * composed of exactly two bytes. The entry itself, F6, is encoded exactly
  * like the first entry, and 6-1 = 5, so the value of the entry is 5.
- * Finally the special entry FF signals the end of the ziplist.
- *
- * Adding another element to the above string with the value "Hello World"
+ * Finally the special entry FF signals(信号；动机（signal 的复数）；标志;表示（signal 的第三人称单数）) the end of the ziplist.
+ * 
+ * 最开始的4个字节代表着数字15，这个数字代表着整个ziplist所占用的字节数。第二个四个字节
+ * 是最后一个entry的偏移量，那就是5，在ziplist的偏移量12的位置。接下来16个bit位(即两个字节)代表着ziplist中元素的个数，
+ * 因为目前只有两个元素，因此他的值是2，
+ * 最后，'00 f3'是第一个entry，存储的是整数2，他由前面的长度(因为他是首个entry，所以他是0)和对于于编码"|1111xxxx|(xxxx介于0001~1101，即1 ~ 13之后)"的F3组成，
+ * 我们需要删除‘F’的高位1111并且从3中减一，所以，这个entry的值是2. 下一个entry的prelen的值是02。所以，第一个entry实际上由两个字节组成。这个entry本身:"f6(11110110)"
+ * 他的编码很像第一个entry，6(0110) - 1 等于5,所以，这个entry的value是5。
+ * 最后一个特殊的entry "FF" 标志着ziplist的结束。
+ * 
+ * > f3(16进制) -> 11110011(二进制)
+ * 
+ * Adding another element to the above(在..之上，上述的，以上) string with the value "Hello World"
  * allows us to show how the ziplist encodes small strings. We'll just show
  * the hex dump of the entry itself. Imagine the bytes as following the
  * entry that stores "5" in the ziplist above:
+ * 
+ * 在上面的字符串中添加另一个值为“Hello World”的元素，我们可以看到ziplist是如何编码小字符串的。我们仅展示16进制的entry的存储，
+ * 想象一下ziplist中在‘5‘这个entry之后的字节是如何存储的:
  *
  * [02] [0b] [48 65 6c 6c 6f 20 57 6f 72 6c 64]
  *
@@ -172,6 +189,9 @@
  * that the entry is a string of length <pppppp>, so 0B means that
  * an 11 bytes string follows. From the third byte (48) to the last (64)
  * there are just the ASCII characters for "Hello World".
+ * 
+ * 第一个字节，02.表示前一个entry的长度，接下来的一个字节表示编码方式并且模式符合"00pppppp",这意味着这个entry是一个长度为pppppp"的string,
+ * 所以0b表示着后面是11位的string。根据第三个字节(48)到最后一个字节(64),他们仅表示这ASCII字符串:"Hello World"
  *
  * ----------------------------------------------------------------------------
  *
@@ -204,7 +224,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  * 
- * ziplist采取的是小端字节序。
+ * ziplist采取的是小端字节序。OK，现在应该已经知道了ziplist为什么使用小端存储了吧
  */
 
 #include <stdio.h>

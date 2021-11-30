@@ -125,7 +125,8 @@
  *      Unsigned integer from 0 to 12. The encoded value is actually from
  *      1 to 13 because 0000 and 1111 can not be used, so 1 should be
  *      subtracted from the encoded 4 bit value to obtain the right value.
- *      >>>> 0000、1111 不能使用，所以要从编码的4bit位中减一来获取正确的值
+ *      >>>> 使用xxxx紧接着存储4字节整数（0 ~ 12的无符号整数）.这个被编码的字段实际上存储的是1 ~ 13，但是因为0000 ,1111不能使用，
+ *            所以要从这个value(4个bit为存储的值)中减一来获取正确的值。
  * |11111111| - End of ziplist special entry.
  *
  * // ##### 通过上述可以看出，前两位为11的才是Integer，有一位为0则代表string
@@ -744,7 +745,11 @@ static inline void zipAssertValidEntry(unsigned char* zl, size_t zlbytes, unsign
     assert(zipEntrySafe(zl, zlbytes, p, &e, 1));
 }
 
-/* Create a new empty ziplist. */
+/**
+ *  Create a new empty ziplist.
+ * 
+ *  创建一个空的ziplist
+ */
 unsigned char *ziplistNew(void) {
     unsigned int bytes = ZIPLIST_HEADER_SIZE+ZIPLIST_END_SIZE;
     unsigned char *zl = zmalloc(bytes);

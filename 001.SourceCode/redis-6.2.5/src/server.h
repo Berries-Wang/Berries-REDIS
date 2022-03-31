@@ -679,12 +679,28 @@ typedef struct RedisModuleDigest {
  */
 typedef struct redisObject {
   /**
-   * Redis数据类型: REDIS_SET,REDIS_ZSET ...
+   * Redis数据类型(即对象类型): 5种
+   * |REDIS_STRING | string，字符串对象|
+   * |REDIS_LIST | list，列表对象|
+   * |REDIS_HASH | hash,哈希对象|
+   * |REDIS_SET | set,集合对象|
+   * |REDIS_ZSET | zset，有序集合对象|
    */
   unsigned type : 4;
 
   /**
-   * 具体使用的数据结构:REDIS_ENCODING_ZIPLIST,REDIS_ENCODING_INTSET ...
+   * 具体使用的数据结构
+   * |编码常量|底层数据结构|
+   * |REDIS_ENCODING_INT|long类型的整数|
+   * |REDIS_ENCODING_EMBSTR|embstr编码的简单动态字符串|
+   * |REDIS_ENCODING_RAW|简单动态字符串|
+   * |REDIS_ENCODING_HT|字典|
+   * |REDIS_ENCODING_LINKEDLIST|双端列表|
+   * |REDIS_ENCODING_ZIPLIST|压缩列表|
+   * |REDIS_ENCODING_INTSET|整数集合|
+   * |REDIS_ENCODING_SKIPLIST|跳跃表和字典|
+   * 
+   * embstr: 是专门用于保存短字符串的一种优化编码方式，跟正常的字符编码相比，字符编码会调用两次内存分配函数来分别创建 redisObject 和 sdshdr 结构（动态字符串结构)，而 embstr 编码则通过调用一次内存分配函数来分配一块连续的内存空间，空间中包含 redisObject 和 sdshdr（动态字符串）两个结构，两者在同一个内存块中
    */
   unsigned encoding : 4;
 
@@ -699,7 +715,7 @@ typedef struct redisObject {
    */
   int refcount;
 
-  void *ptr;
+  void *ptr; // 指向底层实现数据结构的指针
   
 } robj;
 

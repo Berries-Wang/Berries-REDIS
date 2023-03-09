@@ -11,8 +11,8 @@
 6. 高性能: 加锁和解锁是高性能的。
 
 ## 使用Redis实现分布式锁细节
-### 加锁
-#### Redis Command # Set
+### 加锁 
+#### Redis Command # Set <sup>不可重入锁</sup>
 - `127.0.0.1:6379> set key value [EX seconds|PX milliseconds|EXAT timestamp|PXAT milliseconds-timestamp|KEEPTTL] [NX|XX] [GET]` <sup>设置K-V以及过期时间</sup>
     + 参数#Options
       - EX seconds -- Set the specified expire time, in seconds.<sup>设置指定的过期时间，单位:秒</sup>

@@ -12,7 +12,22 @@
 
 ## 使用Redis实现分布式锁细节
 ### 加锁
-#### Redis Command
-- `set key value [EX seconds|PX milliseconds|EXAT timestamp|PXAT milliseconds-timestamp|KEEPTTL] [NX|XX]`
-> 设置K-V以及过期时间
+#### Redis Command # Set
+- `127.0.0.1:6379> set key value [EX seconds|PX milliseconds|EXAT timestamp|PXAT milliseconds-timestamp|KEEPTTL] [NX|XX] [GET]` <sup>设置K-V以及过期时间</sup>
+    + 参数#Options
+      - EX seconds -- Set the specified expire time, in seconds.<sup>设置指定的过期时间，单位:秒</sup>
+      - PX milliseconds -- Set the specified expire time, in milliseconds.<sup>设置指定的过期时间，单位:毫秒</sup>
+      - EXAT timestamp-seconds -- Set the specified Unix time at which the key will expire, in seconds.<sup>设置Unix系统时间戳作为Key的过期时间，单位:秒</sup>
+      - PXAT timestamp-milliseconds -- Set the specified Unix time at which the key will expire, in milliseconds. <sup>设置Unix系统时间戳作为Key的过期时间，单位:毫秒</sup>
+      - NX -- Only set the key if it does not already exist.<sup>只有当Key不存在的时候才设置这个Key</sup>
+      - XX -- Only set the key if it already exist. <sup>只有当Key存在的时候才设置该Key(当Key不存在时，不会设置值，如 `set 'aa' 123 XX` 返回nil(key aa 不存在),此时 `get 'aa' 返回nil`)</sup>
+      - KEEPTTL -- Retain the time to live associated with the key.<sup>保留与Key的存活时间</sup>
+      - GET -- Return the old string stored at key, or nil if key did not exist. An error is returned and SET aborted if the value stored at key is not a string.<sup>返回存储的旧值或者在key不存在时返回nil,如果该Key之前不是作为string类型存储的，那么将返回一个error并终止set行为</sup>
+
 ### 解锁
+
+
+
+---
+## 参考资料
+1. [Redis Commands#set](https://redis.io/commands/set/)

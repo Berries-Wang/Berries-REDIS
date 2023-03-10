@@ -9,7 +9,6 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/001.REDIS_SOURCE_CODE/redis-6.2.5/src/redis-server",
-            "miDebuggerPath": "${workspaceFolder}/001.REDIS_SOURCE_CODE/redis-6.2.5/src/redis-server",
             "args": ["../redis.conf"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/001.REDIS_SOURCE_CODE/redis-6.2.5/src",

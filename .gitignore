@@ -42,3 +42,4 @@ redis.code-workspace
 **/target/**
 *.class
 .idea
+.DS_Store

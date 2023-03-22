@@ -46,8 +46,12 @@
 #include "zmalloc.h"
 #include "config.h"
 
-/* Include the best multiplexing layer supported by this system.
- * The following should be ordered by performances, descending. */
+/**
+ *  Include the best multiplexing layer supported by this system.
+ * The following should be ordered by performances, descending.
+ * 
+ * > 包括本系统支持的最佳多路复用层。以下内容应按性能降序排列。
+ *  */
 #ifdef HAVE_EVPORT
 #include "ae_evport.c"
 #else

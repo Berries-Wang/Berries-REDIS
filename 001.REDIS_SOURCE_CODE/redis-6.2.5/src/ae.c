@@ -338,6 +338,8 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
  * (that may be registered by time event callbacks just processed).
  * Without special flags the function sleeps until some file event
  * fires, or when the next time event occurs (if any).
+ * > 处理每个挂起的时间事件，然后处理每个挂起的文件事件(可能由刚刚处理的时间事件回调注册)。
+ * 如果没有特殊标志，函数将休眠直到某个文件事件触发，或者当下一次事件发生时(如果有的话)。
  *
  * If flags is 0, the function does nothing and returns.
  * if flags has AE_ALL_EVENTS set, all the kind of events are processed.

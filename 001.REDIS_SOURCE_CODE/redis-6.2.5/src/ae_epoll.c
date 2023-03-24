@@ -110,6 +110,11 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
     aeApiState *state = eventLoop->apidata;
     int retval, numevents = 0;
 
+    /**
+     * 收集在epoll监控的事件中已发生的事件
+     * > OpenJDK/014.Unix网络/000.IO复用/002.unix-epoll.md  (https://github.com/Berries-Wang/OpenJDK)
+     * 返回值: -1:表示发生错误;0:没有事件发生;>0:当前发生的事件个数;
+    */
     retval = epoll_wait(state->epfd,state->events,eventLoop->setsize,
             tvp ? (tvp->tv_sec*1000 + (tvp->tv_usec + 999)/1000) : -1);
     if (retval > 0) {
@@ -128,7 +133,7 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
             eventLoop->fired[j].mask = mask;
         }
     }
-    return numevents;
+    return  ;
 }
 
 static char *aeApiName(void) {

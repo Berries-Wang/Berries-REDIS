@@ -394,8 +394,10 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         if (eventLoop->beforesleep != NULL && flags & AE_CALL_BEFORE_SLEEP)
             eventLoop->beforesleep(eventLoop);
 
-        /* Call the multiplexing API, will return only on timeout or when
-         * some event fires. */
+        /** Call the multiplexing API, will return only on timeout or when
+         * some event fires.
+         *> 调用多路复用API，将只在超时或某些事件触发时返回。
+         */
         numevents = aeApiPoll(eventLoop, tvp);
 
         /* After sleep callback. */
@@ -418,7 +420,14 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
              * after the readable. In such a case, we invert the calls.
              * This is useful when, for instance, we want to do things
              * in the beforeSleep() hook, like fsyncing a file to disk,
-             * before replying to a client. */
+             * before replying to a client.
+             * 
+             * 译:
+             *   一般情况下，我们先执行读事件，再处理写事件。这个在查询完成之后立即回复查询非常有用。
+             *   然而，如果AE_BARRIER被设置了，我们的应用程序要求我们做相反的事情: 不在读事件后触发写事件。
+             *        在这种情况下，我们逆转调用。这个在一些情况下非常有用： 如beforeSleep()的钩子，类似于在回复客户端之前异步将文件同步到磁盘
+             * 
+             **/
             int invert = fe->mask & AE_BARRIER;
 
             /* Note the "fe->mask & mask & ..." code: maybe an already

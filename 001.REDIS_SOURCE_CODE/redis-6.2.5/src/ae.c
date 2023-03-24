@@ -273,6 +273,7 @@ static int processTimeEvents(aeEventLoop *eventLoop) {
     aeTimeEvent *te;
     long long maxId;
 
+    // 获取时间事件链表表头 
     te = eventLoop->timeEventHead;
     maxId = eventLoop->timeEventNextId-1;
     monotime now = getMonotonicUs();

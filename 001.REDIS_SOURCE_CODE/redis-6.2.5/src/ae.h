@@ -43,7 +43,7 @@
 #define AE_WRITABLE 2   /* Fire when descriptor is writable. */
 #define AE_BARRIER 4    /* With WRITABLE, never fire the event if the
                            READABLE event already fired in the same event
-                           loop iteration. Useful when you want to persist
+                           loop iteration. Useful when you want to persist(v.持续;继续存在)
                            things to disk before sending replies, and want
                            to do that in a group fashion. */
 
@@ -68,20 +68,34 @@ typedef int aeTimeProc(struct aeEventLoop *eventLoop, long long id, void *client
 typedef void aeEventFinalizerProc(struct aeEventLoop *eventLoop, void *clientData);
 typedef void aeBeforeSleepProc(struct aeEventLoop *eventLoop);
 
-/* File event structure */
-typedef struct aeFileEvent {
-    int mask; /* one of AE_(READABLE|WRITABLE|BARRIER) */
-    aeFileProc *rfileProc;
-    aeFileProc *wfileProc;
+/**
+ *  File event structure : 文本事件结构体
+ *
+ *  */
+typedef struct aeFileEvent
+{
+    /**
+     * one of AE_(READABLE|WRITABLE|BARRIER)
+     *
+     * AE_READABLE:
+     * AE_WRITABLE:
+     * AE_BARRIER: 同一个时间循环中，出发了readable事件那么就不会触发writable事件。
+     */
+    int mask;
+    aeFileProc *rfileProc; // 写操作
+    aeFileProc *wfileProc; // 读操作
     void *clientData;
 } aeFileEvent;
 
-/* Time event structure */
+/**
+ *  Time event structure: 时间事件结构体
+ * 
+ *  */
 typedef struct aeTimeEvent {
     long long id; /* time event identifier. */
     monotime when;
-    aeTimeProc *timeProc;
-    aeEventFinalizerProc *finalizerProc;
+    aeTimeProc *timeProc;  // 时间事件处理器
+    aeEventFinalizerProc *finalizerProc; // 时间事件终结函数
     void *clientData;
     struct aeTimeEvent *prev;
     struct aeTimeEvent *next;

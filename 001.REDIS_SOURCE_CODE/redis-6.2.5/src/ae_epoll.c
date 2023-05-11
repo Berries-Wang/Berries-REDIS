@@ -133,7 +133,7 @@ static int aeApiPoll(aeEventLoop *eventLoop, struct timeval *tvp) {
             eventLoop->fired[j].mask = mask;
         }
     }
-    return  ;
+    return numevents;
 }
 
 static char *aeApiName(void) {

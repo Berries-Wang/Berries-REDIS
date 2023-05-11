@@ -243,8 +243,9 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id)
     return AE_ERR; /* NO event with the specified ID found */
 }
 
-/* How many microseconds until the first timer should fire.
+/* How many microseconds(微秒) until the first timer should fire.
  * If there are no timers, -1 is returned.
+ * > 获取到第一个时间事件被触发的事件。
  *
  * Note that's O(N) since time events are unsorted.
  * Possible optimizations (not needed by Redis so far, but...):
@@ -364,19 +365,24 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
      * events, in order to sleep until the next time event is ready
      * to fire. */
     if (eventLoop->maxfd != -1 ||
-        ((flags & AE_TIME_EVENTS) && !(flags & AE_DONT_WAIT))) {
+        ((flags & AE_TIME_EVENTS) && !(flags & AE_DONT_WAIT)))
+    {
         int j;
         struct timeval tv, *tvp;
         int64_t usUntilTimer = -1;
 
         if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
+        {
+            // 获取最早的时间事件触发剩余的微秒数
             usUntilTimer = usUntilEarliestTimer(eventLoop);
+        }
 
+        // 存在时间事件
         if (usUntilTimer >= 0) {
             tv.tv_sec = usUntilTimer / 1000000;
             tv.tv_usec = usUntilTimer % 1000000;
             tvp = &tv;
-        } else {
+        } else { // 不存在时间事件
             /* If we have to check for events but need to return
              * ASAP because of AE_DONT_WAIT we need to set the timeout
              * to zero */
@@ -384,7 +390,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
                 tv.tv_sec = tv.tv_usec = 0;
                 tvp = &tv;
             } else {
-                /* Otherwise we can block */
+                /* Otherwise we can block */ // AE_DONT_WAIT: 阻塞
                 tvp = NULL; /* wait forever */
             }
         }
@@ -400,6 +406,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
         /** Call the multiplexing API, will return only on timeout or when
          * some event fires.
          *> 调用多路复用API，将只在超时或某些事件触发时返回。
+         * > 通过参数: tvp 来控制是立即返回还是阻塞一段时间,而这个参数，又是通过时间事件控制的
          */
         numevents = aeApiPoll(eventLoop, tvp);
 
@@ -468,9 +475,14 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
             processed++;
         }
     }
-    /* Check time events */
+    /**
+     *  Check time events : 处理时间事件
+     * 
+     *  */
     if (flags & AE_TIME_EVENTS)
+    {
         processed += processTimeEvents(eventLoop);
+    }
 
     return processed; /* return the number of processed file/time events */
 }

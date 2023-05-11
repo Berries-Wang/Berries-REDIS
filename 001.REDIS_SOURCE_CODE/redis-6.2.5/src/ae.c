@@ -373,7 +373,7 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
 
         if (flags & AE_TIME_EVENTS && !(flags & AE_DONT_WAIT))
         {
-            // 获取最早的时间事件触发剩余的微秒数
+            // ***重要*** 获取最早的时间事件触发剩余的微秒数
             usUntilTimer = usUntilEarliestTimer(eventLoop);
         }
 
@@ -445,29 +445,33 @@ int aeProcessEvents(aeEventLoop *eventLoop, int flags)
              * didn't processed, so we check if the event is still valid.
              *
              * Fire the readable event if the call sequence is not
-             * inverted. */
-            if (!invert && fe->mask & mask & AE_READABLE) {
+             * inverted(倒置，反向). */
+            if (!invert && fe->mask & mask & AE_READABLE) { // 处理读事件 · "AE_BARRIER被设置"，此时不需要倒置处理.
                 fe->rfileProc(eventLoop,fd,fe->clientData,mask);
                 fired++;
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
             }
 
             /* Fire the writable event. */
-            if (fe->mask & mask & AE_WRITABLE) {
+            if (fe->mask & mask & AE_WRITABLE) { // 处理写事件
                 if (!fired || fe->wfileProc != fe->rfileProc) {
                     fe->wfileProc(eventLoop,fd,fe->clientData,mask);
                     fired++;
                 }
             }
 
-            /* If we have to invert the call, fire the readable event now
-             * after the writable one. */
-            if (invert) {
+            /**
+             *  If we have to invert the call, fire the readable event now
+             * after the writable one.
+             * > 处理读事件 · "设置了AE_BARRIER"
+             *  */
+            if (invert)
+            {
                 fe = &eventLoop->events[fd]; /* Refresh in case of resize. */
                 if ((fe->mask & mask & AE_READABLE) &&
                     (!fired || fe->wfileProc != fe->rfileProc))
                 {
-                    fe->rfileProc(eventLoop,fd,fe->clientData,mask);
+                    fe->rfileProc(eventLoop, fd, fe->clientData, mask);
                     fired++;
                 }
             }

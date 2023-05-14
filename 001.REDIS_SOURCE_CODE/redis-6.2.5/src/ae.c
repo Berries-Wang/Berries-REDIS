@@ -245,7 +245,7 @@ int aeDeleteTimeEvent(aeEventLoop *eventLoop, long long id)
 
 /* How many microseconds(微秒) until the first timer should fire.
  * If there are no timers, -1 is returned.
- * > 获取到第一个时间事件被触发的事件。
+ * > 获取最早被触发的时间事件
  *
  * Note that's O(N) since time events are unsorted.
  * Possible optimizations (not needed by Redis so far, but...):

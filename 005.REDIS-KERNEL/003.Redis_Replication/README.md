@@ -22,7 +22,7 @@
 - A master can have multiple replicas.
   > 一个主节点可以有多个副本
 - Replicas are able to accept connections from other replicas. Aside from connecting a number of replicas to the same master, replicas can also be connected to other replicas in a cascading-like structure. Since Redis 4.0, all the sub-replicas will receive exactly the same replication stream from the master.
-  > 副本可以接受来自其他副本的连接。除了讲多个副本连接到同一个主节点外，副本还能够以类似于级联的结构连接到其他副本。
+  > 副本可以接受来自其他副本的连接。除了将多个副本连接到同一个主节点外，副本还能够以类似于级联的结构连接到其他副本。
 - Redis replication is non-blocking on the master side. This means that the master will continue to handle queries when one or more replicas perform the initial synchronization or a partial resynchronization.
   > Redis 复制在master侧是异步的。这意味着master在一个或多个副本执行初始备份和持续备份期间将继续处理查询。
 - Replication is also largely(很大程度上) non-blocking on the replica side. While the replica is performing the initial synchronization, it can handle queries using the old version of the dataset, assuming you configured Redis to do so in redis.conf. Otherwise, you can configure Redis replicas to return an error to clients if the replication stream is down. However, after the initial sync, the old dataset must be deleted and the new one must be loaded. The replica will block incoming connections during this brief(短暂的;简短的;) window (that can be as long as many seconds for very large datasets). Since Redis 4.0 you can configure Redis so that the deletion of the old data set happens in a different thread, however loading the new initial dataset will still happen in the main thread and block the replica.

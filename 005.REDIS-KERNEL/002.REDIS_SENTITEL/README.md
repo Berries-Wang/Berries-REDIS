@@ -70,12 +70,24 @@
 &nbsp;&nbsp;默认情况下，Sentinel会以每2秒一次的频率，通过命令连接向所有被监视的主从服务器发送一些格式的命令:
 ```txt
     PUBLISH __sentinel__:hello "<s_ip>,<s_port>,<s_runid>,<s_epoch>,<m_name>,<m_ip>,<m_port>,<m_epoch>"
+
+    # 两方面的信息:
+    ## 1. Sentinel 的信息
+    ## 2. 被监视的主服务器的信息
 ```
 
-## 接收来自主服务器和从服务器的频道信息
+## [Sentinel间互相发现]·接收来自主服务器和从服务器的频道信息
 &nbsp;&nbsp;当Sentinel与一个主服务器或从服务器建立起订阅连接后，Sentinel就会通过订阅连接，向从服务器发送以下命令:
 ```txt
     SUBSCRIBE __SENTINEL__:hello
 ```
 &nbsp;&nbsp;Sentinel对__SENTINEL__:hello频道的订阅会一直持续到Sentinel与服务器的连接断开为止。
 > 每个与Sentinel连接的服务器，Sentinel既通过命令连接向服务器的__sentinel__:hello频道发送消息，又通过订阅连接从服务器的__sentinel__:hello频道接收消息。
+> > 对于监视同一个服务器的多个Sentinel来说，一个Sentinel发送的消息会被其他Sentinel接收到，__这些信息会被其他Sentinel对发送信息Sentinel的认知，也会被用于更新其他Sentinel对被*监视服务器*的的认知。__
+
+### 更新sentinels字典
+&nbsp;&nbsp;Sentinel为主服务器创建的实例结构中的sentinels字典除了保存Sentinel自身外，还有所有同样监视这个主服务器的其他Sentinel资料。
+
+### 创建连向其他Sentinel的命令连接
+&nbsp;&nbsp;当Sentinel通过频道信息发现一个新的Sentinel时，他不仅会为新Sentinel在sentinels字典中创建相应的实例结构，还会创建一个连向新Sentinel的命令连接，而新的Sentinel也同样会创建连向这个Sentinel的命令连接,最终监视同一个主服务器的多个Sentinel将想成相互连接的网络。如图:
+- <img src="./pics/C8539111-2528-4276-BFC8-443F4B5F1245.png"/>

@@ -15,3 +15,67 @@
 ```
 
 ### 1. 初始化服务器
+&nbsp;&nbsp;Sentinel 本质上就是一个运行在特殊模式下的Redis服务器，所以启动Sentinel的第一步，就是初始化一个普通的Redis服务器。但因为Sentinel执行的工作和普通Redis服务器执行的工作不同，所以Sentinel的初始化过程和普通的Redis服务器初始化过程并不相同:
+- 普通服务器在初始化时会通过载入RDB文件或AOF文件来还原数据库状态，但Sentinel并不使用服务器，因此，Sentinel初始化时并不会载入RDB文件或AOF文件
+
+### 2. 使用Sentinel 专用代码
+&nbsp;&nbsp;即 将一部分普通Redis服务器使用的代码替换成Sentinel专用代码。
++ 普通Redis服务器使用redis.c/redisCommandTable作为服务器的命令表，而Sentinel则使用sentinel.c/sentinelcmds作为服务器的命令表
+
+### 3.初始化Sentinel状态
+&nbsp;&nbsp;服务器会初始化一个sentinel.c/sentinelState结构，这个结构保存了服务器中所有和Sentinel功能有关的状态.
+
+### 4. 初始化Sentinel状态的masters属性
+&nbsp;&nbsp;每个sentinelRedisInstance结构代表一个被Sentinel监视的Redis服务器实例，这个实例可以是主服务器、从服务器或另一个Sentinel.
+- masters 字典的初始化是根据被载入的Sentinel配置文件来进行的。
+  ```conf
+     # master_1 configure
+     sentinel monitor master_1 127.0.0.1 6379 2
+     sentinel down-after-milliseconds master_1 30000
+     sentinel parallel-syncs master_1 1
+     sentinel failover-timeout master_1 180000
+  
+     # master_2 configure
+     sentinel monitor mymaster_2 127.0.0.1 6380 2
+     sentinel down-after-milliseconds mymaster_2 30000
+     sentinel parallel-syncs mymaster_2 1
+     sentinel failover-timeout mymaster_2 180000
+  ```
+
+### 5. 创建连向主服务器的网络连接
+&nbsp;&nbsp;初始化Sentinel的最后一步就是创建连向被监视主服务器的网络连接，Sentinel将成为主服务器的客户端，可以向主服务器发送命令，并从命令中获取相关信息.
+
+&nbsp;&nbsp;对于每个被Sentinel监视的主服务器来说，Sentinel会创建两个连向主服务器的异步网络连接:
+1. 命令连接，专门用于向主服务器发送命令，并接收命令回复。
+2. 订阅连接，专门用于订阅主服务器的__sentinel__:hello频道。
+> 为什么需要两个异步连接: 在Redis目前的发布订阅功能中，被发送的信息都不会保存在Redis服务器中，如果在发送消息时，想要接收信息的客户端不在线或断线，那么这个客户端就会丢失这条消息。而为了不丢失__sentinel__:hello频道的任何信息，Sentinel必须专门用一个订阅连接来接收该频道的消息。
+
+## 获取主服务器信息
+&nbsp;&nbsp;Sentinel 默认会以10秒一次的频率，通过命令连接向被监视的主服务器发送INFO命令，并通过分析INFO命令的回复获取主服务器当前的信息:
+- 主服务器本身的信息，包括run_id域记录的服务器运行ID以及role域记录的服务器角色。
+- 主服务下所有的从服务器信息。
+
+## 获取从服务器信息
+&nbsp;&nbsp;当Sentinel发现主服务器有新的从服务器出现时，Sentinel除了会为了这个新的从服务器创建相应的实例结构外，Sentinel还会创建连接到从服务器的命令连接和订阅连接。
+
+&nbsp;&nbsp;创建命令连接后，Sentinel在默认情况下，会以10秒一次的频率通过命令连接向从服务器发送INFO命令，并获得：
+- 从服务器的运行ID run_id
+- 从服务器的角色 role
+- 主服务器的IP 端口
+- 主从服务器的连接状态
+- 从服务器的优先级
+- 从服务器的复制偏移量
+
+## 向主服务器和从服务器发送信息
+&nbsp;&nbsp;默认情况下，Sentinel会以每2秒一次的频率，通过命令连接向所有被监视的主从服务器发送一些格式的命令:
+```txt
+    PUBLISH __sentinel__:hello "<s_ip>,<s_port>,<s_runid>,<s_epoch>,<m_name>,<m_ip>,<m_port>,<m_epoch>"
+```
+
+## 接收来自主服务器和从服务器的频道信息
+&nbsp;&nbsp;当Sentinel与一个主服务器或从服务器建立起订阅连接后，Sentinel就会通过订阅连接，向从服务器发送以下命令:
+```txt
+    SUBSCRIBE __SENTINEL__:hello
+```
+&nbsp;&nbsp;Sentinel对__SENTINEL__:hello频道的订阅会一直持续到Sentinel与服务器的连接断开为止。
+> 每个与Sentinel连接的服务器，Sentinel既通过命令连接向服务器的__sentinel__:hello频道发送消息，又通过订阅连接从服务器的__sentinel__:hello频道接收消息。

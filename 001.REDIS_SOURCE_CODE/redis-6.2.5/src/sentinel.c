@@ -243,6 +243,10 @@ typedef struct sentinelRedisInstance {
     sds info; /* cached INFO output */
 } sentinelRedisInstance;
 
+/**
+ * 
+ * Sentinel 状态
+*/
 /* Main state. */
 struct sentinelState {
     char myid[CONFIG_RUN_ID_SIZE+1]; /* This sentinel ID. */

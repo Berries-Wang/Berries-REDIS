@@ -96,4 +96,26 @@
 &nbsp;&nbsp;在默认的情况下，Sentinel会以每秒一次的频率向所有与他创建了命令连接的实例(主服务器、从服务器、其他Sentinel)发送PING命令，并通过实例返回的PING命令回复来判断实例是否在线。
 
 &nbsp;&nbsp;如下图，带箭头的线显示了Sentinel1和Sentinel2是如何向实例发送PING命令的：
-- 
+<img src="./pics/2023-05-27_11-15.png"/>
+- Sentinel1 将向Sentinel2、主服务器master、从服务器slave1,slave2发送PING命令。
+- Sentinel2 将向Sentinel1、主服务器master、从服务器slave1,slave2发送PING命令。
+
+&nbsp;&nbsp;实例对于PING命令的回复可以分为以下两种情况:
++ 有效回复: 实例返回+PONG 、 -LOADING 、 -MASTERDOWN 三种回复中的一种
++ 无效回复: 实例返回+PONG 、 -LOADING 、 -MASTERDOWN 三种回复之外的其他回复，或者在指定时间内没有返回任何回复
+
+&nbsp;&nbsp;Sentinel配置文件中的down-after-milliseconds 选项指定了Sentinel判断实例进入主观下线所需要的时长： 如果一个实例在down-after-milliseconds毫秒内，连续向Sentinel返回无效回复，那么Sentinel会修改这个实例所对应的实例结构，在结构的flags属性中打开SRI_S_DOWN标识，以此来表示这个实例已经进入到了主观下线状态。
+```txt
+   down-after-milliseconds 不仅会被用来判断主服务器的主观下线状态，也会用来判断主服务器下所有的从服务器以及所有同样监视这个主服务器的其他Sentinel的主管下线状态。
+
+   # 多个Sentinel设置的主管下线状态时长可能不同
+   配置以自身配置为主，不用修改为同一个值。如:
+   Sentinel1:
+     sentinel monitor master 127.0.0.1 6379 2
+     sentinel down-after-millseconds master 50000
+
+   Sentienl2:
+     sentinel monitor master 127.0.0.1 6379 2
+     sentinel down-after-millseconds master 10000
+   则 当master断线时长超过10000毫秒后，Sentinel2会将master判断为主观下线状态，而Sentinel1确认为master仍然在线。只有断线时长超过50000毫秒，Sentinel1才会认为master进入到了主观下线状态。
+```

@@ -91,3 +91,9 @@
 ### 创建连向其他Sentinel的命令连接
 &nbsp;&nbsp;当Sentinel通过频道信息发现一个新的Sentinel时，他不仅会为新Sentinel在sentinels字典中创建相应的实例结构，还会创建一个连向新Sentinel的命令连接，而新的Sentinel也同样会创建连向这个Sentinel的命令连接,最终监视同一个主服务器的多个Sentinel将想成相互连接的网络。如图:
 - <img src="./pics/C8539111-2528-4276-BFC8-443F4B5F1245.png"/>
+
+## 检测主观下线状态
+&nbsp;&nbsp;在默认的情况下，Sentinel会以每秒一次的频率向所有与他创建了命令连接的实例(主服务器、从服务器、其他Sentinel)发送PING命令，并通过实例返回的PING命令回复来判断实例是否在线。
+
+&nbsp;&nbsp;如下图，带箭头的线显示了Sentinel1和Sentinel2是如何向实例发送PING命令的：
+- 

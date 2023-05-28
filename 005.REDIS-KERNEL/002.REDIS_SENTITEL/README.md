@@ -119,3 +119,52 @@
      sentinel down-after-millseconds master 10000
    则 当master断线时长超过10000毫秒后，Sentinel2会将master判断为主观下线状态，而Sentinel1确认为master仍然在线。只有断线时长超过50000毫秒，Sentinel1才会认为master进入到了主观下线状态。
 ```
+
+## 检测客观下线状态
+&nbsp;&nbsp;当Sentinel将一个主服务器判断为主观下限状态后，为了确认这个主服务器是否真的下线，他会向同样监视这个主服务器的其他Sentinel进行询问，看他们是否也认为主服务器已经进入了下线状态（主观下线/客观下线）。当Sentinel从其他Sentinel哪里接收到足够数量的已下线判断之后，Sentinel就会将从服务器判定为客观下线，并对主服务执行故障转移操作。
+
+### 1. 发送SENTINEL is-master-down-by-addr 命令
+&nbsp;&nbsp;Sentinel 使用:
+```txt
+    sentinel is-master-down-by-addr <ip> <port> <curent_epoch> <runid>
+```
+
+### 2. 接收SENTINEL is-master-down-by-addr 命令
+&nbsp;&nbsp;当Sentinel接收到命令之后，会解析命令参数，检查主服务器是否下线，然后回复源Sentinel:
+- <down_state>： 检查结果：1:主服务器已下线;0:主服务器未下线;
+- <leader_runid>：*:表命令仅仅用于检测主服务器的下线状态;局部领头sentinel runid 则用于选举领头Sentinel
+- <leader_epoch>：仅在leader_runid为*时有效
+
+### 3. 接收SENTINEL is-master-down-by-addr 命令的回复
+&nbsp;&nbsp;根据其他Sentinel发回的SENTINEL is-master-down-by-addr命令回复，Sentinel将统计其他Sentinel统一主服务器已下线的数量，当这一数量已经达到了配置指定的判断客观下线所需的数量时，Sentinel会将主服务器实例结构flags属性的SRI_O_DOWN标识打开，标识主服务器已经进入客观下线状态。
+```
+    sentinel monitor mymaster 127.0.0.1 6379 2
+    # 2（quorum） 表示包括当前Sentinel在内，总共需要2个Sentinel都认为主服务器已经下线，当前Sentinel才会将主服务器判断为客观下线。
+    ## > 不论sentinel有多少个，只有${quorum}个sentinel认为master宕机了，才会进行故障转移.
+    ### > 如果此时sentinel只有一个，而quorum是2，那么主节点宕机了，是不会进行故障转移的!!!
+    ## 不同的Sentinel配置可能不一样.
+```
+
+## 选举领头Sentinel
+&nbsp;&nbsp;当一个主服务器被判断为客观下线时，监视这个下线主服务器的各个Sentinel会进行协商，选举出一个领头Sentinel，并由领头Sentinel对下线主服务器执行故障转移操作。
+
+## 故障转移
+&nbsp;&nbsp;在选举出领头Sentinel之后，领头Sentinel将对已下线的主服务器执行故障转义操作：
+1. 在已下线的主服务器属下的所有从服务器中，挑选出一个从服务器，并将其转换为主服务器。
+   ```txt
+      新主服务器筛选规则:
+      - 删除列表中已处于下线状态 & 断线状态的从服务器
+      - 删除列表中最近5秒内没有回复Sentinel INFO命令的从服务器
+      - 删除所有与已下线主服务器连接断开超过down-after-millseconds * 10 毫秒的从服务器，因为这部分从服务器过早与主服务器断开。
+      - Sentinel根据从服务器的优先级，选出优先级最高的那一个；多个具有相同优先级的，则再根据复制偏移量排序，选出复制偏移量最大的那个从服务器
+
+      > 通过INFO命令返回值来判断从服务器是否升级为主服务器。
+   ```
+2. 让已下线的主服务器属下的所有从服务器改为复制新的主服务器。
+   ```txt
+      Sentinel 向其他从服务器发送SLAVEOF 命令。
+   ```
+3. 将已下线主服务器设置为新的主服务器的从服务器，当这个旧的主服务器重新上线时，他就会成为新的主服务器的从服务器。
+   ```txt
+      Sentinel 向其他从服务器发送SLAVEOF 命令。
+   ```

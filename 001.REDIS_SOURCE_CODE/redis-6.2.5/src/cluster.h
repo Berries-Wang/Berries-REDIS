@@ -117,6 +117,7 @@ typedef struct clusterNode {
     char name[CLUSTER_NAMELEN]; /* Node name, hex string, sha1-size */
     int flags;      /* CLUSTER_NODE_... */
     uint64_t configEpoch; /* Last configEpoch observed for this node */
+    // 二进制数组，若为1,表示该节点处理该槽;反之，则不处理该槽。
     unsigned char slots[CLUSTER_SLOTS/8]; /* slots handled by this node */
     sds slots_info; /* Slots info represented by string. */
     int numslots;   /* Number of slots handled by this node */

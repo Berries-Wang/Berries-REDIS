@@ -8,9 +8,9 @@ PATHDIR=`pwd`
 echo "当前目录:`pwd`"
 if [[ $1 = "I" ]];then
     echo "第一次启动..."
-    cp REDIS_CLUSTER_NODE_1.conf REDIS_CLUSTER_NODE_1_copy.conf
+    cp REDIS_CLUSTER_NODE_2.conf REDIS_CLUSTER_NODE_2_copy.conf
     rm -f ./*.aof && rm -f ./*.rdb
-    rm -f nodes-6385.conf
+    rm -f nodes.conf
 elif [[ $1 = "A" ]];then
     echo "重新上线..."
 else
@@ -18,4 +18,4 @@ else
     exit 1;
 fi
 
-"./../../../../001.REDIS_SOURCE_CODE/redis-6.2.5/src/redis-server" ${PATHDIR}/REDIS_CLUSTER_NODE_1_copy.conf
+"./../../../../001.REDIS_SOURCE_CODE/redis-6.2.5/src/redis-server" ${PATHDIR}/REDIS_CLUSTER_NODE_2_copy.conf

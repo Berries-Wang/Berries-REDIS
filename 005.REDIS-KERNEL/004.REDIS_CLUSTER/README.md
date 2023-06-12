@@ -39,18 +39,23 @@
      b0f7a55dd044e2cfa27d7b2cba9fa4ae7233bf8d 127.0.0.1:6387@16387 master - 0 1686217556608 0 connected
      127.0.0.1:6385> set a aaa
      (error) CLUSTERDOWN Hash slot not served
+   
+   ## 槽指派
+   
 ```
 ### 为什么是16384个槽?
 <img src="./pics/why-16384-slots.png"/>
+
 ```txt
-   The reason is:
-   
-   1. Normal heartbeat packets carry the full configuration of a node, that can be replaced in an idempotent(幂等) way with the old in order to update an old config. This means they contain the slots configuration for a node, in raw form(以原始形式), that uses 2k of space with16k slots, but would use a prohibitive（（费用或价格）高得令人望而却步的；限制性的，禁止的；） 8k of space using 65k slots.
-   # 一般的心跳包携带着一个node的全量配置，这样就是一种幂等的方式来更新旧的配置。这意味着心跳包包含这个node关于slots的配置，在原始的形式中，使用2K的空间来传递16K个slot，但是使用8K空间来传递65K个槽的代价是令人望而却步的。
-   2. At the same time it is unlikely（未必；难以相信） that Redis Cluster would scale to more than 1000 mater nodes because of other design tradeoffs.
-   # 与此同时，因为其他因素的权衡，Redis集群的节点一般不会增长超过1000个节点。
-   
-   So 16k was in the right range to ensure enough slots per master with a max of 1000 maters, but a small enough number to propagate the slot configuration as a raw bitmap easily. Note that in small clusters the bitmap would be hard to compress because when N is small the bitmap would have slots/N bits set that is a large percentage of bits set.
-   # 所以，16K个槽是一个合适的范围确保每个最大1000个节点的集群种的每个node都有足够的slot，
+     The reason is:
+     
+     1. Normal heartbeat packets carry the full configuration of a node, that can be replaced in an idempotent(幂等) way with the old in order to update an old config. This means they contain the slots configuration for a node, in raw form(以原始形式), that uses 2k of space with16k slots, but would use a prohibitive（（费用或价格）高得令人望而却步的；限制性的，禁止的；） 8k of space using 65k slots.
+     # 一般的心跳包携带着一个node的全量配置，这样就是一种幂等的方式来更新旧的配置。这意味着心跳包包含这个node关于slots的配置，在原始的形式中，使用2K的空间来传递16K个slot，但是使用8K空间来传递65K个槽的代价是令人望而却步的。
+     2. At the same time it is unlikely（未必；难以相信） that Redis Cluster would scale to more than 1000 mater nodes because of other design tradeoffs.
+     # 与此同时，因为其他因素的权衡，Redis集群的节点一般不会增长超过1000个节点。
+     
+     So 16k was in the right range to ensure enough slots per master with a max of 1000 maters, but a small enough number to propagate the slot configuration as a raw bitmap easily. Note that in small clusters the bitmap would be hard to compress because when N is small the bitmap would have slots/N bits set that is a large percentage of bits set.
+     # 所以，16K个槽是一个合适的范围,确保每个最大1000个节点的集群种的每个node都有足够的slot。当数量足够小的时候，可以轻松将插槽配置转换为位图传输。请注意，在小数量节点的集群中，bitmap很难被压缩。
 
 ```
+

@@ -13,7 +13,7 @@
 ```
 
 ## 槽指派
-&nbsp;&nbsp;Redis集群通过分片的方式来保存数据库中的键值对：集群的整个数据库被分为16384个槽，数据库中的每个键都属于16384个槽中的一个，集群中的每个节点都可以[0,16384]（闭区间）个槽，且只要有一个槽未被指派处理，集群就处于下线状态。
+&nbsp;&nbsp;Redis集群通过分片的方式来保存数据库中的键值对：集群的整个数据库被分为16384 （0 ~ 16383）个槽，数据库中的每个键都属于16384个槽中的一个，集群中的每个节点都可以[0,16384]（闭区间）个槽，且只要有一个槽未被指派处理，集群就处于下线状态。
 ```txt
    # 只要有一个槽未被指派处理，集群就处于下线状态:
      127.0.0.1:6385> cluster info
@@ -41,6 +41,27 @@
      (error) CLUSTERDOWN Hash slot not served
    
    ## 槽指派
+      ➜  redis-6.2.5 git:(master) ✗ ./src/redis-cli -p 6385 cluster addslots {1..5000}
+      # 不能登录进去，否则会报: '(error) ERR Invalid or out of range slot'
+     ### 槽指派完成之后，集群达到上线状态
+      127.0.0.1:6385> cluster info
+      cluster_state:ok
+      cluster_slots_assigned:16384
+      cluster_slots_ok:16384
+      cluster_slots_pfail:0
+      cluster_slots_fail:0
+      cluster_known_nodes:3
+      cluster_size:3
+      cluster_current_epoch:5
+      cluster_my_epoch:5
+      cluster_stats_messages_ping_sent:639
+      cluster_stats_messages_pong_sent:469
+      cluster_stats_messages_meet_sent:2
+      cluster_stats_messages_sent:1110
+      cluster_stats_messages_ping_received:469
+      cluster_stats_messages_pong_received:641
+      cluster_stats_messages_received:1110
+      127.0.0.1:6385> 
    
 ```
 ### 为什么是16384个槽?
@@ -56,6 +77,5 @@
      
      So 16k was in the right range to ensure enough slots per master with a max of 1000 maters, but a small enough number to propagate the slot configuration as a raw bitmap easily. Note that in small clusters the bitmap would be hard to compress because when N is small the bitmap would have slots/N bits set that is a large percentage of bits set.
      # 所以，16K个槽是一个合适的范围,确保每个最大1000个节点的集群种的每个node都有足够的slot。当数量足够小的时候，可以轻松将插槽配置转换为位图传输。请注意，在小数量节点的集群中，bitmap很难被压缩。
-
 ```
 

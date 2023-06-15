@@ -10,7 +10,7 @@ if [[ $1 = "I" ]];then
     echo "第一次启动..."
     cp REDIS_CLUSTER_NODE_3.conf REDIS_CLUSTER_NODE_3_copy.conf
     rm -f ./*.aof && rm -f ./*.rdb
-    rm -f nodes.conf
+    rm -f nodes-6387.conf
 elif [[ $1 = "A" ]];then
     echo "重新上线..."
 else

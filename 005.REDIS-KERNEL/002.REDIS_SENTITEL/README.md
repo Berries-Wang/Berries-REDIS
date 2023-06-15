@@ -1,4 +1,6 @@
 # REDIS SENTINEL
+## Core
+&nbsp;;&nbsp;SENTINEL各个节点会通过互相发送消息的方式来交换中各个REDIS实例的状态信息，并且每个REDIS实例都会存储其他REDIS实例的状态信息。
 ## 为什么需要Redis Sentinel？
 &nbsp;&nbsp;了解过 主从复制 可以知道，当Master节点宕机时，Redis就不可用了，因为Master节点无法处理写命令，Replication节点无法更新数据。(Replication节点本身就无法处理写命令)
 

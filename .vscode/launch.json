@@ -17,7 +17,7 @@
             "cwd": "${workspaceFolder}/001.REDIS_SOURCE_CODE/redis-6.2.5/src",
             "environment": [],
             "externalConsole": false,
-            "MIMode": "gdb",
+            "MIMode": "gdb", // macos m1 使用 lldb , Linux 使用gdb
             "setupCommands": [
                 {
                     "description": "为 gdb 启用整齐打印",

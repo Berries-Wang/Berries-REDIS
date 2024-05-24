@@ -44,3 +44,4 @@ redis.code-workspace
 *.class
 .idea
 .DS_Store
+001.REDIS_SOURCE_CODE/001.REDIS_MODULES/000.REDIS_BLOOM/RedisBloom

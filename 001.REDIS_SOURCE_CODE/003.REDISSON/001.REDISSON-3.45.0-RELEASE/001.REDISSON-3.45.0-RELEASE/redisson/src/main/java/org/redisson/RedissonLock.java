@@ -264,6 +264,7 @@ public class RedissonLock extends RedissonBaseLock {
         }
         
         current = System.currentTimeMillis();
+        // 订阅: 结合锁释放流程分析
         CompletableFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
         try {
             subscribeFuture.get(time, TimeUnit.MILLISECONDS);
